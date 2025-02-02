@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import "./App.css";
-
+import { useEffect } from "react";
+const { VITE_BASE_URL, VITE_API_PATH } = import.meta.env;
 
 function App() {
 	const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ function App() {
 	const [isAuth, setIsAuth] = useState(false);
 	const [products, setProducts] = useState([]);
 	const [tempProduct, setTempProduct] = useState(null);
+
 
 	const handleInputChange =  function(e) {
 		const { id , value } = e.target;
@@ -24,7 +26,7 @@ function App() {
 	const handleSubmit = async function(e) {
 		e.preventDefault();
 		try {
-			const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/admin/signin`,formData);
+			const res = await axios.post(`${VITE_BASE_URL}/admin/signin`,formData);
 			const { token, expired } = res.data;
 			//儲存Token至cookie
 			document.cookie = `userToken = ${token}; expires = ${new Date(expired)}; path=/`;
@@ -40,7 +42,7 @@ function App() {
 
 	const getProducts = async function() {
 		try {
-			const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/${import.meta.env.VITE_API_PATH}/admin/products`);
+			const res = await axios.get(`${VITE_BASE_URL}/api/${VITE_API_PATH}/admin/products`);
 			const productsData = res.data.products;
 			setProducts(productsData);
 		}catch (error) {
@@ -48,8 +50,25 @@ function App() {
 		}
 	}
 
+	const checkAdmin = async (e) => {
+		try {
+			await axios.post(`${VITE_BASE_URL}/api/user/check`);
+			setIsAuth(true);
+		} catch (error) {
+			console.log(error.response.data);
+		}
+	};
 	
-	// axios.defaults.headers.common['Authorization'] = AUTH_TOKEN;
+	useEffect(()=>{
+		const token = document.cookie.replace(
+			/(?:(?:^|.*;\s*)userToken\s*=\s*([^;]*).*$)|^.*$/,
+			"$1"
+		);
+		axios.defaults.headers.common.Authorization = token;
+		checkAdmin();
+		getProducts();
+	},[])
+
 	return (
 		<>
 			{isAuth ? (
